@@ -1,0 +1,10 @@
+# Run screen Auto-rotate tool chained with other Xsession processes to detect session exit
+
+# Run autorotate process
+/usr/bin/accel-auto-rotate &
+
+# Execute chained command line
+$@
+
+# After session exit
+kill -- -$$ # Sends SIGTERM to child/sub processes

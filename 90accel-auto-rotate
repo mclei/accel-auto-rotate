@@ -1,3 +1,3 @@
-# Run screen Auto-rotate tool
+# Chain the Auto-rotate tool process startup
 
-/usr/bin/accel-auto-rotate &
+STARTUP="/usr/bin/accel-auto-rotate_exec $STARTUP"
