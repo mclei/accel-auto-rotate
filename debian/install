@@ -1,0 +1,2 @@
+accel-auto-rotate /usr/bin
+90accel-auto-rotate /etc/X11/Xsession.d

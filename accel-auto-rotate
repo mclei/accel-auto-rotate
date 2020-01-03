@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Auto rotate device screen based on accelerometer state = device orientation
+# Uses monitor-sensor from iio-sensor-proxy package
+
+# Detect touchscreen device (uses first found)
+while read LINETYPE VALUE
+do
+  if [ "$LINETYPE" = "P:" ]
+  then # new device - reset name
+    NAME=
+  elif [ "$LINETYPE" = "E:" ]
+  then
+    if [ "${VALUE%%=*}" = "NAME" ]
+    then
+      NAME="${VALUE#*=}"
+    elif [ "$VALUE" = "ID_INPUT_TOUCHSCREEN=1" ]
+    then
+      if [ -n "$NAME" -a -z "$TOUCHSCREEN" ]
+      then
+        TOUCHSCREEN="pointer:${NAME//\"/}"
+      fi
+    fi
+  fi
+done < <(udevadm info --export-db)
+
+echo "Touchscreen found: $TOUCHSCREEN"
+
+MATCH=".*Accelerometer orientation changed: (.*)"
+
+while read LINE
+do
+
+  if [[ "$LINE" =~ $MATCH ]]
+  then
+    echo Matched: ${BASH_REMATCH[1]}
+
+    case "${BASH_REMATCH[1]}" in
+      normal)
+        xrandr --orientation normal
+        xinput set-prop "$TOUCHSCREEN" 'Coordinate Transformation Matrix' 1 0 0 0 1 0 0 0 1
+        ;;
+      bottom-up)
+        xrandr --orientation inverted
+        xinput set-prop "$TOUCHSCREEN" 'Coordinate Transformation Matrix' -1 0 1 0 -1 1 0 0 1
+        ;;
+      right-up)
+        xrandr --orientation right
+        xinput set-prop "$TOUCHSCREEN" 'Coordinate Transformation Matrix' 0 1 0 -1 0 1 0 0 1
+        ;;
+      left-up)
+        xrandr --orientation left
+        xinput set-prop "$TOUCHSCREEN" 'Coordinate Transformation Matrix' 0 -1 1 1 0 0 0 0 1
+        ;;
+    esac
+  fi
+
+done < <(monitor-sensor)

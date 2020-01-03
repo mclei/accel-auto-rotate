@@ -1,0 +1,6 @@
+The Debian Package accel-auto-rotate
+------------------------------------
+
+Start /usr/bin/accel-auto-rotate from X session
+
+ -- Michal Leinweber <lei-deb@leisoft.cz>  Fri, 03 Jan 2020 16:29:44 +0100

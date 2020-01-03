@@ -1,0 +1,15 @@
+Source: accel-auto-rotate
+Section: x11
+Priority: optional
+Maintainer: Michal Leinweber <lei-deb@leisoft.cz>
+Build-Depends: debhelper (>= 11)
+Standards-Version: 4.1.3
+Homepage: https://github.com/mclei/accel-auto-rotate
+Vcs-Browser: https://github.com/mclei/accel-auto-rotate
+Vcs-Git: https://github.com/mclei/accel-auto-rotate.git
+
+Package: accel-auto-rotate
+Architecture: all
+Depends: bash, udev, iio-sensor-proxy, x11-xserver-utils, xinput
+Description: Auto rotate screen and touchscreen base on accel sensor
+ Auto-rotate screen and touchscreen orientatio using accelerometer
