@@ -3,7 +3,22 @@
 # Auto rotate device screen based on accelerometer state = device orientation
 # Uses monitor-sensor from iio-sensor-proxy package
 
-# Detect touchscreen device (uses first found)
+# Detect all touchs device (touchscreen and touchpen are separate devices and all of them must be rotated)
+
+declare -A SCREENORIENT
+SCREENORIENT[normal]=normal
+SCREENORIENT[bottom-up]=inverted
+SCREENORIENT[right-up]=right
+SCREENORIENT[left-up]=left
+
+declare -A TOUCHMATRIX
+TOUCHMATRIX[normal]="1 0 0 0 1 0 0 0 1"
+TOUCHMATRIX[bottom-up]="-1 0 1 0 -1 1 0 0 1"
+TOUCHMATRIX[right-up]="0 1 0 -1 0 1 0 0 1"
+TOUCHMATRIX[left-up]="0 -1 1 1 0 0 0 0 1"
+
+# Detect touch devices
+declare -a TOUCHDEV
 while read LINETYPE VALUE
 do
   if [ "$LINETYPE" = "P:" ]
@@ -16,16 +31,18 @@ do
       NAME="${VALUE#*=}"
     elif [ "$VALUE" = "ID_INPUT_TOUCHSCREEN=1" ]
     then
-      if [ -n "$NAME" -a -z "$TOUCHSCREEN" ]
+      if [ -n "$NAME" ]
       then
-        TOUCHSCREEN="pointer:${NAME//\"/}"
+        TOUCHDEV+=("pointer:${NAME//\"/}")
       fi
     fi
   fi
 done < <(udevadm info --export-db)
 
-echo "Touchscreen found: $TOUCHSCREEN"
+echo "Touch devices found: ${TOUCHDEV[@]}"
 
+
+# Monitor accelerometer changes and rotates screen and touch devices
 MATCH=".*Accelerometer orientation changed: (.*)"
 
 while read LINE
@@ -35,24 +52,14 @@ do
   then
     echo Matched: ${BASH_REMATCH[1]}
 
-    case "${BASH_REMATCH[1]}" in
-      normal)
-        xrandr --orientation normal
-        xinput set-prop "$TOUCHSCREEN" 'Coordinate Transformation Matrix' 1 0 0 0 1 0 0 0 1
-        ;;
-      bottom-up)
-        xrandr --orientation inverted
-        xinput set-prop "$TOUCHSCREEN" 'Coordinate Transformation Matrix' -1 0 1 0 -1 1 0 0 1
-        ;;
-      right-up)
-        xrandr --orientation right
-        xinput set-prop "$TOUCHSCREEN" 'Coordinate Transformation Matrix' 0 1 0 -1 0 1 0 0 1
-        ;;
-      left-up)
-        xrandr --orientation left
-        xinput set-prop "$TOUCHSCREEN" 'Coordinate Transformation Matrix' 0 -1 1 1 0 0 0 0 1
-        ;;
-    esac
+    if [ -n "$SCREENORIENT[${BASH_REMATCH[1]}]" ]
+    then
+      xrandr --orientation ${SCREENORIENT[${BASH_REMATCH[1]}]}
+      for DEV in "${TOUCHDEV[@]}"
+      do
+        xinput set-prop "$DEV" 'Coordinate Transformation Matrix' ${TOUCHMATRIX[${BASH_REMATCH[1]}]}
+      done
+    fi
   fi
 
 done < <(monitor-sensor)
